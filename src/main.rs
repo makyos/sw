@@ -11,10 +11,18 @@ use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
+fn split(stdout: &mut termion::raw::RawTerminal<std::io::Stdout>, start: &chrono::DateTime<chrono::Local>) {
+    let now = Local::now();
+    let dur = now - *start;
+    let h   = dur.num_hours()   % 24;
+    let m   = dur.num_minutes() % 60;
+    let s   = dur.num_seconds() % 60;
+    let _ = write!(stdout, "{} +{:>02}:{:>02}:{:>02}({}sec) \r\n", now.to_string(), h, m, s, dur.num_seconds());
+}
 
 fn main() {
 
-	//// KEYBORD event from STDIO at new thread
+    //// KEYBORD event from STDIO at new thread
     let stdin = stdin();
     let (tx, rx) = channel();
     thread::spawn(move || {
@@ -27,28 +35,23 @@ fn main() {
 
     let mut stdout = stdout().into_raw_mode().unwrap();
     let start: chrono::DateTime<chrono::Local> = Local::now();
-
-	let _ = write!(stdout, "[spc]: split, [q]: stop & quit\r\n");
-	let _ = write!(stdout, "{} START!\r\n", start);
+    split(&mut stdout, &start);
 
     loop {
 
         stdout.flush().unwrap();
         let _ = write!(stdout, "{}\r", Local::now().to_string());
 
-		//// KEYBORD event hundle
+        //// KEYBORD event hundle
         if let Ok(evt) = rx.recv_timeout(Duration::from_millis(100)) {
             match evt {
                 Event::Key(Key::Char('q')) | Event::Key(Key::Ctrl('c')) => {
-                    let _ = write!(stdout, "{} GOAL! {} sec \r\n", Local::now().to_string(), (Local::now() - start).num_seconds());
+                    split(&mut stdout, &start);
                     return;
                 }
-                Event::Key(Key::Char(' ')) => {
-                    let _ = write!(stdout, "{} duration {} sec \r\n", Local::now().to_string(), (Local::now() - start).num_seconds());
+                _ => {
+                    split(&mut stdout, &start);
                 }
-				Event::Key(Key::Ctrl('n')) => {
-				}
-                _ => {}
             }
         }
 
