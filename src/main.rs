@@ -1,4 +1,5 @@
 use std::io::{stdin, stdout, Write};
+use std::string::String;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
@@ -11,13 +12,14 @@ use termion::event::{Event, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
-fn split(stdout: &mut termion::raw::RawTerminal<std::io::Stdout>, start: &chrono::DateTime<chrono::Local>) {
-    let now = Local::now();
-    let dur = now - *start;
-    let h   = dur.num_hours()   % 24;
-    let m   = dur.num_minutes() % 60;
-    let s   = dur.num_seconds() % 60;
-    let _ = write!(stdout, "{} +{:>02}:{:>02}:{:>02}({}sec) \r\n", now.to_string(), h, m, s, dur.num_seconds());
+
+fn dur(start: &chrono::DateTime<chrono::Local>) -> String {
+    let dur = Local::now() - *start;
+    return format!("+{:>02}:{:>02}:{:>02}({})",
+                   dur.num_hours()   % 24,
+                   dur.num_minutes() % 60,
+                   dur.num_seconds() % 60,
+                   dur.num_seconds());
 }
 
 fn main() {
@@ -35,22 +37,23 @@ fn main() {
 
     let mut stdout = stdout().into_raw_mode().unwrap();
     let start: chrono::DateTime<chrono::Local> = Local::now();
-    split(&mut stdout, &start);
+    let _ = write!(stdout, "{} {}\r", Local::now().to_string(), dur(&start));
+    let _ = write!(stdout, "\n");
 
     loop {
 
         stdout.flush().unwrap();
-        let _ = write!(stdout, "{}\r", Local::now().to_string());
+        let _ = write!(stdout, "{} {}\r", Local::now().to_string(), dur(&start));
 
         //// KEYBORD event hundle
-        if let Ok(evt) = rx.recv_timeout(Duration::from_millis(100)) {
+        if let Ok(evt) = rx.recv_timeout(Duration::from_millis(10)) {
             match evt {
                 Event::Key(Key::Char('q')) | Event::Key(Key::Ctrl('c')) => {
-                    split(&mut stdout, &start);
+                    let _ = write!(stdout, "\n");
                     return;
                 }
                 _ => {
-                    split(&mut stdout, &start);
+                    let _ = write!(stdout, "\n");
                 }
             }
         }
