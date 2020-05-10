@@ -37,23 +37,23 @@ fn main() {
 
     let mut stdout = stdout().into_raw_mode().unwrap();
     let start: chrono::DateTime<chrono::Local> = Local::now();
-    let _ = write!(stdout, "{} {}\r", Local::now().to_string(), dur(&start));
-    let _ = write!(stdout, "\n");
+    write!(stdout, "{} {}\r", Local::now().to_string(), dur(&start)).unwrap();
+    write!(stdout, "\n").unwrap();
 
     loop {
 
         stdout.flush().unwrap();
-        let _ = write!(stdout, "{} {}\r", Local::now().to_string(), dur(&start));
+        write!(stdout, "{} {}\r", Local::now().to_string(), dur(&start)).unwrap();
 
         //// KEYBORD event hundle
         if let Ok(evt) = rx.recv_timeout(Duration::from_millis(10)) {
             match evt {
                 Event::Key(Key::Char('q')) | Event::Key(Key::Ctrl('c')) => {
-                    let _ = write!(stdout, "\n");
+                    write!(stdout, "\n").unwrap();
                     return;
                 }
                 _ => {
-                    let _ = write!(stdout, "\n");
+                    write!(stdout, "\n").unwrap();
                 }
             }
         }
